@@ -3,10 +3,12 @@
 #include "BitmapDLL.h"
 #include "CppDLL.h"
 #include <windows.h>
-#include<fstream>
-#include<string>
-#include<cstdio>
-#include<algorithm>
+#include <fstream>
+#include <string>
+#include <cstdio>
+#include <algorithm>
+#include <vector>
+#include <thread>
 
 
 #pragma pack(push, 1)
@@ -150,6 +152,52 @@ void display_headers(_BITMAPFILEHEADER file_header, _BITMAPINFOHEADER info_heade
 	std::cout << info_header.biClrImportant << std::endl;
 }
 
+void maximal_filter(RGB ** bitmap, RGB ** bitmap_copy, int from_height, int to_height, int width)
+{
+	unsigned char temp_array[9];
+
+	for (int i = from_height; i <to_height; i++)
+	{
+		for (int j = 1; j < width; j++)
+		{
+			temp_array[0] = bitmap[i - 1][j - 1].red;
+			temp_array[1] = bitmap[i - 1][j].red;
+			temp_array[2] = bitmap[i - 1][j + 1].red;
+			temp_array[3] = bitmap[i][j - 1].red;
+			temp_array[4] = bitmap[i][j].red;
+			temp_array[5] = bitmap[i][j + 1].red;
+			temp_array[6] = bitmap[i + 1][j - 1].red;
+			temp_array[7] = bitmap[i + 1][j].red;
+			temp_array[8] = bitmap[i + 1][j + 1].red;
+
+			bitmap_copy[i][j].red = *std::max_element(&temp_array[0], temp_array + 9);
+
+			temp_array[0] = bitmap[i - 1][j - 1].green;
+			temp_array[1] = bitmap[i - 1][j].green;
+			temp_array[2] = bitmap[i - 1][j + 1].green;
+			temp_array[3] = bitmap[i][j - 1].green;
+			temp_array[4] = bitmap[i][j].green;
+			temp_array[5] = bitmap[i][j + 1].green;
+			temp_array[6] = bitmap[i + 1][j - 1].green;
+			temp_array[7] = bitmap[i + 1][j].green;
+			temp_array[8] = bitmap[i + 1][j + 1].green;
+
+			bitmap_copy[i][j].green = *std::max_element(temp_array, temp_array + 9);
+
+			temp_array[0] = bitmap[i - 1][j - 1].blue;
+			temp_array[1] = bitmap[i - 1][j].blue;
+			temp_array[2] = bitmap[i - 1][j + 1].blue;
+			temp_array[3] = bitmap[i][j - 1].blue;
+			temp_array[4] = bitmap[i][j].blue;
+			temp_array[5] = bitmap[i][j + 1].blue;
+			temp_array[6] = bitmap[i + 1][j - 1].blue;
+			temp_array[7] = bitmap[i + 1][j].blue;
+			temp_array[8] = bitmap[i + 1][j + 1].blue;
+
+			bitmap_copy[i][j].blue = *std::max_element(temp_array, temp_array + 9);
+		}
+	}
+}
 
 int main()
 {
@@ -158,70 +206,31 @@ int main()
 	Function2c();
 	FunctionCpp();
 
-	
 	_BITMAPFILEHEADER file_header;
 	_BITMAPINFOHEADER info_header;
 	RGB ** bitmap = nullptr;
 	RGB ** bitmap_copy = nullptr;
 	int rowOffset = 0;
 
-	read_file("obraz2.bmp", file_header, info_header, bitmap, rowOffset);
+	read_file("konie.bmp", file_header, info_header, bitmap, rowOffset);
 
-	
-
-	//algorytm
 	bitmap_copy = new RGB *[info_header.biHeight];
 
 	for (int i = 0; i < info_header.biHeight; i++)
 		bitmap_copy[i] = new RGB[info_header.biWidth + rowOffset];
 
-		unsigned char temp_array[9];
+	std::vector<std::thread> threads;
+	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, 1, info_header.biHeight / 4, info_header.biWidth + rowOffset)));
+	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, info_header.biHeight / 4, info_header.biHeight * 2 / 4, info_header.biWidth + rowOffset)));
+	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, info_header.biHeight / 2, info_header.biHeight * 3 / 4, info_header.biWidth + rowOffset)));
+	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, info_header.biHeight * 3 / 4, info_header.biHeight - 1, info_header.biWidth + rowOffset)));
 
-		for (int i = 1; i < info_header.biHeight - 1; i++)
+		for (int i = 0; i < threads.size(); i++)
 		{
-			for (int j = 1; j < info_header.biWidth + rowOffset - 1; j++)
-			{
-				temp_array[0] = bitmap[i - 1][j - 1].red;
-				temp_array[1] = bitmap[i - 1][j].red;
-				temp_array[2] = bitmap[i - 1][j + 1].red;
-				temp_array[3] = bitmap[i][j - 1].red;
-				temp_array[4] = bitmap[i][j].red;
-				temp_array[5] = bitmap[i][j + 1].red;
-				temp_array[6] = bitmap[i + 1][j - 1].red;
-				temp_array[7] = bitmap[i + 1][j].red;
-				temp_array[8] = bitmap[i + 1][j + 1].red;
-
-				bitmap_copy[i][j].red = *std::max_element(&temp_array[0], temp_array + 9);
-
-				temp_array[0] = bitmap[i - 1][j - 1].green;
-				temp_array[1] = bitmap[i - 1][j].green;
-				temp_array[2] = bitmap[i - 1][j + 1].green;
-				temp_array[3] = bitmap[i][j - 1].green;
-				temp_array[4] = bitmap[i][j].green;
-				temp_array[5] = bitmap[i][j + 1].green;
-				temp_array[6] = bitmap[i + 1][j - 1].green;
-				temp_array[7] = bitmap[i + 1][j].green;
-				temp_array[8] = bitmap[i + 1][j + 1].green;
-
-				bitmap_copy[i][j].green = *std::max_element(temp_array, temp_array+9);
-
-				temp_array[0] = bitmap[i - 1][j - 1].blue;
-				temp_array[1] = bitmap[i - 1][j].blue;
-				temp_array[2] = bitmap[i - 1][j + 1].blue;
-				temp_array[3] = bitmap[i][j - 1].blue;
-				temp_array[4] = bitmap[i][j].blue;
-				temp_array[5] = bitmap[i][j + 1].blue;
-				temp_array[6] = bitmap[i + 1][j - 1].blue;
-				temp_array[7] = bitmap[i + 1][j].blue;
-				temp_array[8] = bitmap[i + 1][j + 1].blue;
-
-				bitmap_copy[i][j].blue = *std::max_element(temp_array, temp_array+9);
-			}
+			threads[i].join();
 		}
 
-		write_file("obraz2a.bmp", file_header, info_header, rowOffset, bitmap_copy);
-
-	
+	write_file("konie1a.bmp", file_header, info_header, rowOffset, bitmap_copy);
 
 	return 0;
 }
