@@ -7,3 +7,4 @@
 #endif
 
 int BITMAPCPP_API FunctionCpp();
+
