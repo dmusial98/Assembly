@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include <iostream>
 #include "BitmapDLL.h"
 #include "CppDLL.h"
@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <vector>
 #include <thread>
+#include <iomanip>
 
 
 #pragma pack(push, 1)
@@ -156,7 +157,7 @@ void maximal_filter(RGB ** bitmap, RGB ** bitmap_copy, int from_height, int to_h
 {
 	unsigned char temp_array[9];
 
-	for (int i = from_height; i <to_height; i++)
+	for (int i = from_height; i <= to_height; i++)
 	{
 		for (int j = 1; j < width; j++)
 		{
@@ -201,7 +202,6 @@ void maximal_filter(RGB ** bitmap, RGB ** bitmap_copy, int from_height, int to_h
 
 int main()
 {
-	
 	Function1c();
 	Function2c();
 	FunctionCpp();
@@ -211,24 +211,77 @@ int main()
 	RGB ** bitmap = nullptr;
 	RGB ** bitmap_copy = nullptr;
 	int rowOffset = 0;
+	unsigned int threadsNumber = 8;
 
 	read_file("konie.bmp", file_header, info_header, bitmap, rowOffset);
 
 	bitmap_copy = new RGB *[info_header.biHeight];
+	 
+	//printf("%X %X %X\n %X %X %X", bitmap[0][0].red, bitmap[0][0].green, bitmap[0][0].blue, bitmap[0][1].red, bitmap[0][1].green, bitmap[0][1].blue);
+/*
+	RGB * ptr1 = bitmap[110];
+	RGB * ptr2 = bitmap[111];
+	RGB * ptr3 = bitmap[112];
+	RGB * ptr4 = bitmap[113];
+	RGB * ptr5 = bitmap[114];
+	RGB * ptr6 = bitmap[115];
+	RGB * ptr7 = bitmap[116];
+
+	RGB ** PTR = bitmap;
+
+	std::cout << ptr1 << std::endl;
+	ptr1++;
+	std::cout << ptr1 << std::endl;
+	std::cout << ptr2 << std::endl;
+	ptr1++;
+	std::cout << ptr1 << std::endl;
+	std::cout << ptr3 << std::endl;
+	ptr1++;
+	std::cout << ptr1 << std::endl;
+	std::cout << ptr4 << std::endl;*/
+
+	/*std::cout << std::endl << std::endl;
+	for (int i = 0; i < 20; i++)
+	{
+		std::cout << PTR << std::endl;
+		PTR++;
+	}*/
+
+
+	/*int * ptr = new int[100];
+
+	std::cout << std::endl << std::endl;
+	for (int i = 0; i < 20; i++)
+	{
+		std::cout << ptr << std::endl;
+		ptr++;
+	}*/
 
 	for (int i = 0; i < info_header.biHeight; i++)
 		bitmap_copy[i] = new RGB[info_header.biWidth + rowOffset];
 
-	std::vector<std::thread> threads;
-	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, 1, info_header.biHeight / 4, info_header.biWidth + rowOffset)));
-	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, info_header.biHeight / 4, info_header.biHeight * 2 / 4, info_header.biWidth + rowOffset)));
-	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, info_header.biHeight / 2, info_header.biHeight * 3 / 4, info_header.biWidth + rowOffset)));
-	threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, info_header.biHeight * 3 / 4, info_header.biHeight - 1, info_header.biWidth + rowOffset)));
+	std::cout << std::thread::hardware_concurrency();
 
-		for (int i = 0; i < threads.size(); i++)
-		{
-			threads[i].join();
-		}
+	std::vector<std::thread> threads;
+
+	int from = 1;
+	int to = info_header.biHeight / threadsNumber - 2;
+	for (int i = 0; i < threadsNumber; i++)
+	{
+		threads.push_back(std::move(std::thread(maximal_filter, bitmap, bitmap_copy, from, to, info_header.biWidth + rowOffset)));
+		from += info_header.biHeight / threadsNumber;
+		to += info_header.biHeight / threadsNumber;
+		
+		if (i == 0)
+			from -= 2;
+		if (to >= info_header.biHeight - 1)
+			to = info_header.biHeight - 2;
+	}
+
+	for (int i = 0; i < threads.size(); i++)
+	{
+		threads[i].join();
+	}
 
 	write_file("konie1a.bmp", file_header, info_header, rowOffset, bitmap_copy);
 
