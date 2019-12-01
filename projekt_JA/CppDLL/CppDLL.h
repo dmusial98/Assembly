@@ -1,3 +1,5 @@
+
+
 #pragma once
 
 #ifdef BITMAPCPP_EXPORTS
@@ -6,5 +8,8 @@
 #define BITMAPCPP_API __declspec(dllimport)
 #endif
 
-int BITMAPCPP_API FunctionCpp();
+#include<algorithm>
+#include"..\projekt_JA\RBG.h"
 
+void BITMAPCPP_API MaximalFilterCPP(RGB ** bitmap, RGB ** bitmap_copy, int from_height, int to_height, int width);
+ 
