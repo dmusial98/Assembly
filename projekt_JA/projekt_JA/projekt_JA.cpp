@@ -235,15 +235,22 @@ int main(int argc, char* argv[])
 		for (int i = 0; i < info_header.biHeight; i++)
 			bitmap_copy[i] = new RGB[info_header.biWidth];
 
-		printf("0.0 red: %#X green: %#X blue: %#X\n", bitmap[7][0].red, bitmap[7][0].green, bitmap[7][0].blue);
-		printf("0.1 red: %#X green: %#X blue: %#X\n", bitmap[7][1].red, bitmap[7][1].green, bitmap[7][1].blue);
-		printf("0.2 red: %#X green: %#X blue: %#X\n", bitmap[7][2].red, bitmap[7][2].green, bitmap[7][2].blue);
-		printf("0.2 red: %#X green: %#X blue: %#X\n", bitmap[7][3].red, bitmap[7][3].green, bitmap[7][3].blue);
-
+		printf("6 0: %#X 1: %#X 2: %#X\n", bitmap[6][0].red, bitmap[6][1].red, bitmap[6][2].red);
+		printf("7 0: %#X 1: %#X 2: %#X\n", bitmap[7][0].red, bitmap[7][1].red, bitmap[7][2].red);
+		printf("8 0: %#X 1: %#X 2: %#X\n", bitmap[8][0].red, bitmap[8][1].red, bitmap[8][2].red);
+		
 		std::cout << "&bitmap[0] " << &bitmap[0] << std::endl;
-		std::cout << "&bitmap[0][0] " << &bitmap[0][0] << std::endl;
+		
+		std::cout << "&bitmap[6] " << &bitmap[6] << std::endl;
+		std::cout << "&bitmap[7] " << &bitmap[7] << std::endl;
+		std::cout << "&bitmap[8] " << &bitmap[8] << std::endl;
+		std::cout << "&bitmap[6][0] " << &bitmap[6][0] << std::endl;
+		std::cout << "&bitmap[7][0] " << &bitmap[7][0] << std::endl;
+		std::cout << "&bitmap[8][0] " << &bitmap[8][0] << std::endl;
 
-		MaximalFilterASM(bitmap, bitmap_copy, 0x7, 0x10, 0x3);
+		std::cout << "&bitmap_copy[7][0) " << &bitmap_copy[7][0] << std::endl;
+
+		MaximalFilterASM(bitmap, bitmap_copy, 0x7, 0x10, 0x1);
 
 		std::vector<std::thread> threads;
 
