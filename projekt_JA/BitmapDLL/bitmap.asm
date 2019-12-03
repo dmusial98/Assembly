@@ -22,17 +22,32 @@ MaximalFilter proc bitmap: PTR, bitmap_copy: PTR, from_height: DWORD, to_height:
 MOV R10, RAX	; width -> R10
 
 ;pierwszy wiersz bitmapy w programie
+
 MOV R15, 8h		;do wymno¿enia przez 8
 IMUL R8, R15	;height_from * 8 -> ilosc bajtów do przeskoczenia dla danego wiersza
-MOV RAX, RCX	;RAX <- bitmap
-ADD RAX, R8		;uzyskanie adresu dla pierwszego wiersza bitmapy
-MOV RCX, RAX	;zapisanie aktualnego wiersza bitmapy
-SUB RAX, 8h	
-MOV R11, RAX
-ADD RAX, 10h
-MOV R12, RAX
+ADD RCX, R8		;w RCX wskaŸnik na (height_from) wiersz
 
+MOV R13, [RCX]	;do R13 wskaŸnik na ca³y wiersz
 
+;petla z odczytaniem x argumentów 
+
+PETLA:
+
+MOV AL, [R13]
+ADD R13, 1h
+MOV AL, [R13]
+ADD R13, 1h
+MOV AL, [R13] 
+ADD R13, 1h
+
+MOV RAX, R10
+SUB RAX, 1h
+MOV R10, RAX
+JNZ PETLA
+
+PMAXSB 
+
+ZERO:
 ret
 
 MaximalFilter endp

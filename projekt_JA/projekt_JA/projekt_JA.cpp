@@ -2,15 +2,13 @@
 #include <iostream>
 #include "BitmapDLL.h"
 #include "CppDLL.h"
-#include <windows.h>
+//#include <windows.h>
 #include <fstream>
 #include <string>
 #include <cstdio>
 #include <algorithm>
 #include <vector>
 #include <thread>
-#include <iomanip>
-
 
 #pragma pack(push, 1)
 struct _BITMAPFILEHEADER
@@ -237,7 +235,15 @@ int main(int argc, char* argv[])
 		for (int i = 0; i < info_header.biHeight; i++)
 			bitmap_copy[i] = new RGB[info_header.biWidth];
 
-		MaximalFilterASM(bitmap, bitmap_copy, 0x7, 0x10, 0x20);
+		printf("0.0 red: %#X green: %#X blue: %#X\n", bitmap[7][0].red, bitmap[7][0].green, bitmap[7][0].blue);
+		printf("0.1 red: %#X green: %#X blue: %#X\n", bitmap[7][1].red, bitmap[7][1].green, bitmap[7][1].blue);
+		printf("0.2 red: %#X green: %#X blue: %#X\n", bitmap[7][2].red, bitmap[7][2].green, bitmap[7][2].blue);
+		printf("0.2 red: %#X green: %#X blue: %#X\n", bitmap[7][3].red, bitmap[7][3].green, bitmap[7][3].blue);
+
+		std::cout << "&bitmap[0] " << &bitmap[0] << std::endl;
+		std::cout << "&bitmap[0][0] " << &bitmap[0][0] << std::endl;
+
+		MaximalFilterASM(bitmap, bitmap_copy, 0x7, 0x10, 0x3);
 
 		std::vector<std::thread> threads;
 
