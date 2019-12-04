@@ -199,58 +199,35 @@ int main(int argc, char* argv[])
 
 		bitmap_copy = new RGB *[info_header.biHeight];
 
-		/*RGB * ptr1 = bitmap[110];
-		RGB * ptr2 = bitmap[111];
-		RGB * ptr3 = bitmap[112];
-		RGB * ptr4 = bitmap[113];
-		RGB * ptr5 = bitmap[114];
-		RGB * ptr6 = bitmap[115];
-		RGB * ptr7 = bitmap[116];
-
-
-		RGB ** ptr = bitmap;
-
-		for (int i = 0; i < info_header.biHeight; i++)
-		{
-			std::cout << &bitmap[i] << std::endl;
-		}*/
-
-		/*std::cout << ptr1 - &bitmap[110][0] << std::endl;
-		std::cout << ptr2 - &bitmap[111][0] << std::endl;
-		std::cout << ptr3 - &bitmap[112][0] << std::endl;
-		std::cout << ptr4 - &bitmap[113][0] << std::endl;
-		std::cout << ptr5 - &bitmap[114][0] << std::endl;
-		std::cout << ptr6 - &bitmap[115][0] << std::endl;
-		std::cout << ptr7 - &bitmap[116][0] << std::endl;
-
-		std::cout << ptr2 - ptr1 << std::endl;
-		std::cout << ptr3 - ptr2 << std::endl;
-		std::cout << ptr4 - ptr3 << std::endl;
-		std::cout << ptr5 - ptr4 << std::endl;
-		std::cout << ptr6 - ptr5 << std::endl;
-		std::cout << ptr7 - ptr6 << std::endl;*/
-
 		//std::cout << &bitmap[info_header.biHeight - 1][info_header.biWidth + rowOffset - 1] - &bitmap[info_header.biHeight - 1][0] << std::endl;
 
 		for (int i = 0; i < info_header.biHeight; i++)
 			bitmap_copy[i] = new RGB[info_header.biWidth];
+		std::cout << "RED:\n\n";
+		printf("6 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[6][0].red, bitmap[6][1].red, bitmap[6][2].red, bitmap[6][3].red, bitmap[6][4].red);
+		printf("7 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[7][0].red, bitmap[7][1].red, bitmap[7][2].red, bitmap[7][3].red, bitmap[7][4].red);
+		printf("8 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[8][0].red, bitmap[8][1].red, bitmap[8][2].red, bitmap[7][3].red, bitmap[7][4].red);
+		std::cout << "GREEN\n\n";
+		printf("6 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[6][0].green, bitmap[6][1].green, bitmap[6][2].green, bitmap[6][3].green, bitmap[6][4].green);
+		printf("7 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[7][0].green, bitmap[7][1].green, bitmap[7][2].green, bitmap[7][3].green, bitmap[7][4].green);
+		printf("8 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[8][0].green, bitmap[8][1].green, bitmap[8][2].green, bitmap[7][3].green, bitmap[7][4].green);
+		std::cout << "BLUE\n\n";
+		printf("6 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[6][0].blue, bitmap[6][1].blue, bitmap[6][2].blue, bitmap[6][3].blue, bitmap[6][4].blue);
+		printf("7 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[7][0].blue, bitmap[7][1].blue, bitmap[7][2].blue, bitmap[7][3].blue, bitmap[7][4].blue);
+		printf("8 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[8][0].blue, bitmap[8][1].blue, bitmap[8][2].blue, bitmap[7][3].blue, bitmap[7][4].blue);
 
-		printf("6 0: %#X 1: %#X 2: %#X\n", bitmap[6][0].red, bitmap[6][1].red, bitmap[6][2].red);
-		printf("7 0: %#X 1: %#X 2: %#X\n", bitmap[7][0].red, bitmap[7][1].red, bitmap[7][2].red);
-		printf("8 0: %#X 1: %#X 2: %#X\n", bitmap[8][0].red, bitmap[8][1].red, bitmap[8][2].red);
-		
-		std::cout << "&bitmap[0] " << &bitmap[0] << std::endl;
+		/*std::cout << "&bitmap[0] " << &bitmap[0] << std::endl;
 		
 		std::cout << "&bitmap[6] " << &bitmap[6] << std::endl;
 		std::cout << "&bitmap[7] " << &bitmap[7] << std::endl;
 		std::cout << "&bitmap[8] " << &bitmap[8] << std::endl;
 		std::cout << "&bitmap[6][0] " << &bitmap[6][0] << std::endl;
 		std::cout << "&bitmap[7][0] " << &bitmap[7][0] << std::endl;
-		std::cout << "&bitmap[8][0] " << &bitmap[8][0] << std::endl;
+		std::cout << "&bitmap[8][0] " << &bitmap[8][0] << std::endl;*/
 
 		std::cout << "&bitmap_copy[7][0) " << &bitmap_copy[7][0] << std::endl;
 
-		MaximalFilterASM(bitmap, bitmap_copy, 0x7, 0x10, 0x1);
+		MaximalFilterASM(bitmap, bitmap_copy, 0x7, 0x10, 0x5);
 
 		std::vector<std::thread> threads;
 
