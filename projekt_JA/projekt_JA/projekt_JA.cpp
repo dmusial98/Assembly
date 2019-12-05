@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <vector>
 #include <thread>
+#include <chrono>
+#include <ctime>
 
 #pragma pack(push, 1)
 struct _BITMAPFILEHEADER
@@ -179,6 +181,9 @@ int main(int argc, char* argv[])
 {
 	if (argc == 5)
 	{ 
+		std::chrono::duration<double> CPPTime;
+		std::chrono::duration<double> ASMTime;
+
 		std::string readFileName = argv[1], writeFileNameCPP = argv[2], writeFileNameASM = argv[3];
 		threadsNumber = atoi(argv[4]);
 
@@ -199,7 +204,7 @@ int main(int argc, char* argv[])
 
 		for (int i = 0; i < info_header.biHeight; i++)
 			bitmap_copy[i] = new RGB[info_header.biWidth];
-		std::cout << "RED:\n\n";
+		/*std::cout << "RED:\n\n";
 		printf("0 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[0][0].red, bitmap[0][1].red, bitmap[0][2].red, bitmap[0][3].red, bitmap[0][4].red);
 		printf("1 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[1][0].red, bitmap[1][1].red, bitmap[1][2].red, bitmap[1][3].red, bitmap[1][4].red);
 		printf("2 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].red, bitmap[2][1].red, bitmap[2][2].red, bitmap[2][3].red, bitmap[2][4].red);
@@ -238,18 +243,20 @@ int main(int argc, char* argv[])
 		printf("3 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[3][0].blue, bitmap[3][1].blue, bitmap[3][2].blue, bitmap[3][3].blue, bitmap[3][4].blue);
 		printf("4 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[4][0].blue, bitmap[4][1].blue, bitmap[4][2].blue, bitmap[4][3].blue, bitmap[4][4].blue);
 
-		
 		std::cout << "&bitmap[0] " << &bitmap[0] << std::endl;
 		std::cout << "&bitmap[1] " << &bitmap[1] << std::endl;
 		std::cout << "&bitmap[2] " << &bitmap[2] << std::endl;
 		std::cout << "&bitmap[0][0] " << &bitmap[0][0] << std::endl;
 		std::cout << "&bitmap[1][0] " << &bitmap[1][0] << std::endl;
-		std::cout << "&bitmap[2][0] " << &bitmap[2][0] << std::endl;
+		std::cout << "&bitmap[2][0] " << &bitmap[2][0] << std::endl;*/
 
 		std::vector<std::thread> threads;
 
 		int from = 1;
 		int to = info_header.biHeight / threadsNumber;
+
+		auto startTime = std::chrono::system_clock::now();
+
 		for (int i = 0; i < threadsNumber; i++)
 		{
 			if (threadsNumber == 1)
@@ -269,6 +276,12 @@ int main(int argc, char* argv[])
 			threads[i].join();
 		}
 
+		auto endTime = std::chrono::system_clock::now();
+
+		CPPTime = endTime - startTime;
+
+		std::cout << "CPP time: " << CPPTime.count() << std::endl;
+
 		if (!write_file(writeFileNameCPP, file_header, info_header, rowOffset, bitmap_copy))
 			std::cout << "Wrong name of file for write";
 
@@ -276,6 +289,9 @@ int main(int argc, char* argv[])
 
 		from = 1;
 		to = info_header.biHeight / threadsNumber;
+
+		startTime = std::chrono::system_clock::now();
+
 		for (int i = 0; i < threadsNumber; i++)
 		{
 			if (threadsNumber == 1)
@@ -294,6 +310,11 @@ int main(int argc, char* argv[])
 		{
 			threads[i].join();
 		}
+
+		endTime = std::chrono::system_clock::now();
+		ASMTime = endTime - startTime;
+
+		std::cout << "ASM time: " << ASMTime.count() << std::endl;
 
 		if (!write_file(writeFileNameASM, file_header, info_header, rowOffset, bitmap_copy))
 			std::cout << "Wrong name of file for write";
