@@ -37,8 +37,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="bitmap.asm">
+    <MASM Include="bitmap.asm">
       <Filter>Source Files</Filter>
-    </None>
+    </MASM>
   </ItemGroup>
 </Project>

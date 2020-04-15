@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #ifdef BITMAPCPP_EXPORTS
@@ -11,5 +9,5 @@
 #include<algorithm>
 #include"..\projekt_JA\RBG.h"
 
-void BITMAPCPP_API MaximalFilterCPP(RGB ** bitmap, RGB ** bitmap_copy, int from_height, int to_height, int width);
+void BITMAPCPP_API MaximalFilterCPP(unsigned char *** bitmap_arrays, int from_height, int to_height, int width);
  

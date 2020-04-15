@@ -38,10 +38,13 @@ struct _BITMAPINFOHEADER
 unsigned char* file_char = new unsigned char[sizeof(_BITMAPFILEHEADER)];
 unsigned char* info_char = new unsigned char[sizeof(_BITMAPINFOHEADER)];
 unsigned int threadsNumber = 1;
+std::chrono::duration<double> CPPTime;
+std::chrono::duration<double> ASMTime;
 
 #pragma pack(pop)
 
-bool read_file(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFOHEADER &infoHeader, RGB ** &bitmap, int &rowOffset)
+bool read_file_(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFOHEADER &infoHeader, 
+	unsigned char *** bitmap_arrays, int &rowOffset)
 {
 	std::fstream file(fileName, std::fstream::in | std::fstream::binary);
 
@@ -72,22 +75,26 @@ bool read_file(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFOH
 		if ((infoHeader.biWidth * 3) % 4 == 0)
 			rowOffset = 0;
 		else
-			rowOffset =  4 - (infoHeader.biWidth * 3) % 4;
+			rowOffset = 4 - (infoHeader.biWidth * 3) % 4;
 
-		bitmap = new RGB*[infoHeader.biHeight];
+		bitmap_arrays[0] = new unsigned char* [infoHeader.biHeight];
+		bitmap_arrays[1] = new unsigned char* [infoHeader.biHeight];
+		bitmap_arrays[2] = new unsigned char* [infoHeader.biHeight];
 
 		char bin_buffer[1] = { 'a' };
 
 		for (int i = 0; i < infoHeader.biHeight; i++)
 		{
-			bitmap[i] = new RGB[infoHeader.biWidth];
+			bitmap_arrays[0][i] = new unsigned char [infoHeader.biWidth];
+			bitmap_arrays[1][i] = new unsigned char[infoHeader.biWidth];
+			bitmap_arrays[2][i] = new unsigned char[infoHeader.biWidth];
 
 			for (int j = 0; j < infoHeader.biWidth; j++)
 			{
-				file.read(reinterpret_cast<char *>(&bitmap[i][j].red), sizeof(char));
-				file.read(reinterpret_cast<char *>(&bitmap[i][j].green), sizeof(char));
-				file.read(reinterpret_cast<char *>(&bitmap[i][j].blue), sizeof(char));
-			
+				file.read(reinterpret_cast<char *>(&bitmap_arrays[0][i][j]), sizeof(char));
+				file.read(reinterpret_cast<char *>(&bitmap_arrays[1][i][j]), sizeof(char));
+				file.read(reinterpret_cast<char *>(&bitmap_arrays[2][i][j]), sizeof(char));
+
 				if (j == infoHeader.biWidth - 1 && rowOffset != 0)
 				{
 					for (int a = 0; a < rowOffset; a++)
@@ -98,14 +105,14 @@ bool read_file(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFOH
 			}
 		}
 	}
-	else 
+	else
 		return false;
 
 	file.close();
 	return true;
 }
 
-bool write_file(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFOHEADER &infoHeader,int rowOffset, RGB ** bitmap)
+bool write_file_(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFOHEADER &infoHeader, int rowOffset, unsigned char *** bitmap)
 {
 	std::fstream file(fileName, std::ios_base::out | std::ios_base::binary);
 
@@ -135,9 +142,9 @@ bool write_file(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFO
 		{
 			for (int j = 0; j < infoHeader.biWidth; j++)
 			{
-				file.write(reinterpret_cast<char *>(&bitmap[i][j].red), sizeof(char));
-				file.write(reinterpret_cast<char *>(&bitmap[i][j].green), sizeof(char));
-				file.write(reinterpret_cast<char *>(&bitmap[i][j].blue), sizeof(char));
+				file.write(reinterpret_cast<char *>(&bitmap[3][i][j]), sizeof(char));
+				file.write(reinterpret_cast<char *>(&bitmap[4][i][j]), sizeof(char));
+				file.write(reinterpret_cast<char *>(&bitmap[5][i][j]), sizeof(char));
 
 				if (j == infoHeader.biWidth - 1 && rowOffset != 0)
 				{
@@ -156,168 +163,125 @@ bool write_file(std::string fileName, _BITMAPFILEHEADER &fileHeader, _BITMAPINFO
 	return true;
 }
 
-void display_headers(_BITMAPFILEHEADER file_header, _BITMAPINFOHEADER info_header)
-{
-	std::cout << file_header.bfType << std::endl;
-	std::cout << file_header.bfSize << std::endl;
-	std::cout << file_header.bfReserved1 << std::endl;
-	std::cout << file_header.bfReserved2 << std::endl;
-	std::cout << file_header.bfOffBits << std::endl;
-
-	std::cout << info_header.biSize << std::endl;
-	std::cout << info_header.biWidth << std::endl;
-	std::cout << info_header.biHeight << std::endl;
-	std::cout << info_header.biPlanes << std::endl;
-	std::cout << info_header.biBitCount << std::endl;
-	std::cout << info_header.biCompression << std::endl;
-	std::cout << info_header.biSizeImage << std::endl;
-	std::cout << info_header.biXPelsPerMeter << std::endl;
-	std::cout << info_header.biYPelsPerMeter << std::endl;
-	std::cout << info_header.biClrUsed << std::endl;
-	std::cout << info_header.biClrImportant << std::endl;
-}
-
 int main(int argc, char* argv[])
-{
-	if (argc == 5)
-	{ 
-		std::chrono::duration<double> CPPTime;
-		std::chrono::duration<double> ASMTime;
+ {
+	if (argc == 5 || argc == 4)
+	{
 
 		std::string readFileName = argv[1], writeFileNameCPP = argv[2], writeFileNameASM = argv[3];
-		threadsNumber = atoi(argv[4]);
+		if (argc == 5) //podano liczbę wątków
+		{
+			threadsNumber = atoi(argv[4]);
 
-		if (threadsNumber < 1 || threadsNumber > 64)
+			if (threadsNumber < 1 || threadsNumber > 64)
+				threadsNumber = std::thread::hardware_concurrency();
+		}
+		else
+		{
 			threadsNumber = std::thread::hardware_concurrency();
+		}
 
 		_BITMAPFILEHEADER file_header;
 		_BITMAPINFOHEADER info_header;
-		RGB ** bitmap = nullptr;
-		RGB ** bitmap_copy = nullptr;
+	
 		int rowOffset = 0;
 
+		unsigned char *** bitmap_arrays = new unsigned char **[6]; 
+		//pierwsze trzy tablice: red, green, blue
+		//nastepne trzy to red_copy, green_copy i blue_copy
 
-		if (!read_file(readFileName, file_header, info_header, bitmap, rowOffset))
-			std::cout << "Can not open file.\n";
-
-		bitmap_copy = new RGB *[info_header.biHeight];
-
-		for (int i = 0; i < info_header.biHeight; i++)
-			bitmap_copy[i] = new RGB[info_header.biWidth];
-		/*std::cout << "RED:\n\n";
-		printf("0 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[0][0].red, bitmap[0][1].red, bitmap[0][2].red, bitmap[0][3].red, bitmap[0][4].red);
-		printf("1 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[1][0].red, bitmap[1][1].red, bitmap[1][2].red, bitmap[1][3].red, bitmap[1][4].red);
-		printf("2 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].red, bitmap[2][1].red, bitmap[2][2].red, bitmap[2][3].red, bitmap[2][4].red);
-		std::cout << "GREEN\n\n";
-		printf("0 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[0][0].green, bitmap[0][1].green, bitmap[0][2].green, bitmap[0][3].green, bitmap[0][4].green);
-		printf("1 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[1][0].green, bitmap[1][1].green, bitmap[1][2].green, bitmap[1][3].green, bitmap[1][4].green);
-		printf("2 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].green, bitmap[2][1].green, bitmap[2][2].green, bitmap[2][3].green, bitmap[2][4].green);
-		std::cout << "BLUE\n\n";
-		printf("0 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[0][0].blue, bitmap[0][1].blue, bitmap[0][2].blue, bitmap[0][3].blue, bitmap[0][4].blue);
-		printf("1 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[1][0].blue, bitmap[1][1].blue, bitmap[1][2].blue, bitmap[1][3].blue, bitmap[1][4].blue);
-		printf("2 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].blue, bitmap[2][1].blue, bitmap[2][2].blue, bitmap[2][3].blue, bitmap[2][4].blue);
-
-		std::cout << "RED:\n\n";
-		printf("1 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[1][0].red, bitmap[1][1].red, bitmap[1][2].red, bitmap[1][3].red, bitmap[1][4].red);
-		printf("2 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].red, bitmap[2][1].red, bitmap[2][2].red, bitmap[2][3].red, bitmap[2][4].red);
-		printf("3 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[3][0].red, bitmap[3][1].red, bitmap[3][2].red, bitmap[3][3].red, bitmap[3][4].red);
-		std::cout << "GREEN\n\n";
-		printf("1 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[1][0].green, bitmap[1][1].green, bitmap[1][2].green, bitmap[1][3].green, bitmap[1][4].green);
-		printf("2 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].green, bitmap[2][1].green, bitmap[2][2].green, bitmap[2][3].green, bitmap[2][4].green);
-		printf("3 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[3][0].green, bitmap[3][1].green, bitmap[3][2].green, bitmap[3][3].green, bitmap[3][4].green);
-		std::cout << "BLUE\n\n";
-		printf("1 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[1][0].blue, bitmap[1][1].blue, bitmap[1][2].blue, bitmap[1][3].blue, bitmap[1][4].blue);
-		printf("2 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].blue, bitmap[2][1].blue, bitmap[2][2].blue, bitmap[2][3].blue, bitmap[2][4].blue);
-		printf("3 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[3][0].blue, bitmap[3][1].blue, bitmap[3][2].blue, bitmap[3][3].blue, bitmap[3][4].blue);
-
-		std::cout << "RED:\n\n";
-		printf("2 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].red, bitmap[2][1].red, bitmap[2][2].red, bitmap[2][3].red, bitmap[2][4].red);
-		printf("3 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[3][0].red, bitmap[3][1].red, bitmap[3][2].red, bitmap[3][3].red, bitmap[3][4].red);
-		printf("4 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[4][0].red, bitmap[4][1].red, bitmap[4][2].red, bitmap[4][3].red, bitmap[4][4].red);
-		std::cout << "GREEN\n\n";
-		printf("2 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].green, bitmap[2][1].green, bitmap[2][2].green, bitmap[2][3].green, bitmap[2][4].green);
-		printf("3 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[3][0].green, bitmap[3][1].green, bitmap[3][2].green, bitmap[3][3].green, bitmap[3][4].green);
-		printf("4 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[4][0].green, bitmap[4][1].green, bitmap[4][2].green, bitmap[4][3].green, bitmap[4][4].green);
-		std::cout << "BLUE\n\n";
-		printf("2 0: %#x 1: %#X 2: %#x 3: %#x 4: %#x\n", bitmap[2][0].blue, bitmap[2][1].blue, bitmap[2][2].blue, bitmap[2][3].blue, bitmap[2][4].blue);
-		printf("3 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[3][0].blue, bitmap[3][1].blue, bitmap[3][2].blue, bitmap[3][3].blue, bitmap[3][4].blue);
-		printf("4 0: %#x 1: %#x 2: %#x 3: %#x 4: %#x\n", bitmap[4][0].blue, bitmap[4][1].blue, bitmap[4][2].blue, bitmap[4][3].blue, bitmap[4][4].blue);
-
-		std::cout << "&bitmap[0] " << &bitmap[0] << std::endl;
-		std::cout << "&bitmap[1] " << &bitmap[1] << std::endl;
-		std::cout << "&bitmap[2] " << &bitmap[2] << std::endl;
-		std::cout << "&bitmap[0][0] " << &bitmap[0][0] << std::endl;
-		std::cout << "&bitmap[1][0] " << &bitmap[1][0] << std::endl;
-		std::cout << "&bitmap[2][0] " << &bitmap[2][0] << std::endl;*/
-
-		std::vector<std::thread> threads;
-
-		int from = 1;
-		int to = info_header.biHeight / threadsNumber;
-
-		auto startTime = std::chrono::system_clock::now();
-
-		for (int i = 0; i < threadsNumber; i++)
+		if (read_file_(readFileName, file_header, info_header, bitmap_arrays, rowOffset))
 		{
-			if (threadsNumber == 1)
-				to--;
 
-			threads.push_back(std::move(std::thread(MaximalFilterCPP, bitmap, bitmap_copy, from, to, info_header.biWidth)));
 
-			from = to;
-			to += info_header.biHeight / threadsNumber;
+			bitmap_arrays[3] = new unsigned char *[info_header.biHeight];
+			bitmap_arrays[4] = new unsigned char *[info_header.biHeight];
+			bitmap_arrays[5] = new unsigned char *[info_header.biHeight];
 
-			if (to >= info_header.biHeight - 1)
-				to = info_header.biHeight - 1;
+			for (int i = 0; i < info_header.biHeight; i++)
+			{
+				bitmap_arrays[3][i] = new unsigned char[info_header.biWidth];
+				bitmap_arrays[4][i] = new unsigned char[info_header.biWidth];
+				bitmap_arrays[5][i] = new unsigned char[info_header.biWidth];
+			}
+
+			std::vector<std::thread> threads;
+
+			int from;
+			int to;
+
+			from = 1;
+			to = info_header.biHeight / threadsNumber;
+
+			auto startTime = std::chrono::steady_clock::now();
+			
+			for (int i = 0; i < threadsNumber; i++)
+			{ //pętla odpowiedzialna za rozdysponowanie zadań wątkom funkcji ASM
+				if (threadsNumber == 1)
+					to = info_header.biHeight - 1;
+
+				threads.push_back(std::move(std::thread(MaximalFilterASM, from, to, info_header.biWidth, bitmap_arrays)));
+
+				from = to;
+				to += info_header.biHeight / threadsNumber;
+
+				if (to >= info_header.biHeight - 1)
+					to = info_header.biHeight - 1;
+			}
+
+			for (int i = 0; i < threads.size(); i++)
+			{
+				threads[i].join();		
+			}
+
+			auto endTime = std::chrono::steady_clock::now();
+			ASMTime = endTime - startTime; //zliczenie czasu dla ASM
+
+			if (!write_file_(writeFileNameASM, file_header, info_header, rowOffset, bitmap_arrays))
+				std::cout << "Wrong name of file for write - ASM\n";
+
+			std::cout << "ASM time: " << ASMTime.count() << std::endl;
+	
+
+			threads.clear();
+
+			from = 1;
+			to = info_header.biHeight / threadsNumber;
+
+			startTime = std::chrono::steady_clock::now();
+
+			for (int i = 0; i < threadsNumber; i++)
+			{ //pętla odpowiedzialna za rozdysponowanie zadań wątkom funkcji C++
+				if (threadsNumber == 1)
+					to--;
+
+				threads.push_back(std::move(std::thread(MaximalFilterCPP, bitmap_arrays, from, to, info_header.biWidth)));
+
+				from = to;
+				to += info_header.biHeight / threadsNumber;
+
+				if (to >= info_header.biHeight - 1)
+					to = info_header.biHeight - 1;
+			}
+
+			for (int i = 0; i < threads.size(); i++)
+			{
+				threads[i].join();
+			}
+
+			endTime = std::chrono::steady_clock::now();
+
+			CPPTime = endTime - startTime; //zliczenie czasu dla C++
+
+			if (!write_file_(writeFileNameCPP, file_header, info_header, rowOffset, bitmap_arrays))
+				std::cout << "Wrong name of file for write - CPP\n";
+
+			std::cout << "CPP time: " << CPPTime.count() << std::endl;
 		}
-
-		for (int i = 0; i < threads.size(); i++)
+		else
 		{
-			threads[i].join();
+			std::cout << "Cannot open file " << argv[1] << std::endl;
 		}
-
-		auto endTime = std::chrono::system_clock::now();
-
-		CPPTime = endTime - startTime;
-
-		std::cout << "CPP time: " << CPPTime.count() << std::endl;
-
-		if (!write_file(writeFileNameCPP, file_header, info_header, rowOffset, bitmap_copy))
-			std::cout << "Wrong name of file for write";
-
-		threads.clear();
-
-		from = 1;
-		to = info_header.biHeight / threadsNumber;
-
-		startTime = std::chrono::system_clock::now();
-
-		for (int i = 0; i < threadsNumber; i++)
-		{
-			if (threadsNumber == 1)
-				to--;
-
-			threads.push_back(std::move(std::thread(MaximalFilterASM, bitmap, bitmap_copy, from, to, info_header.biWidth)));
-
-			from = to;
-			to += info_header.biHeight / threadsNumber;
-
-			if (to >= info_header.biHeight - 1)
-				to = info_header.biHeight - 1;
-		}
-
-		for (int i = 0; i < threads.size(); i++)
-		{
-			threads[i].join();
-		}
-
-		endTime = std::chrono::system_clock::now();
-		ASMTime = endTime - startTime;
-
-		std::cout << "ASM time: " << ASMTime.count() << std::endl;
-
-		if (!write_file(writeFileNameASM, file_header, info_header, rowOffset, bitmap_copy))
-			std::cout << "Wrong name of file for write";
 	}
 	else
 	{
